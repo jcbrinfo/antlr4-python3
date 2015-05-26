@@ -29,6 +29,7 @@
 #/
 from uuid import UUID
 from io import StringIO
+from antlr4.IntervalSet import Interval
 from antlr4.Token import Token
 from antlr4.atn.ATN import ATN
 from antlr4.atn.ATNType import ATNType
@@ -208,7 +209,7 @@ class ATNDeserializer (object):
             for j in range(0, n):
                 i1 = self.readInt()
                 i2 = self.readInt()
-                iset.addRange(range(i1, i2 + 1)) # range upper limit is exclusive
+                iset.addRange(Interval(i1, i2 + 1)) # range upper limit is exclusive
         return sets
 
     def readEdges(self, atn:ATN, sets:list):

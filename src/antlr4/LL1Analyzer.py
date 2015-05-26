@@ -28,7 +28,7 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #/
-from antlr4.IntervalSet import IntervalSet
+from antlr4.IntervalSet import IntervalSet, Interval
 from antlr4.Token import Token
 from antlr4.PredictionContext import PredictionContext, SingletonPredictionContext, PredictionContextFromRuleContext
 from antlr4.RuleContext import RuleContext
@@ -188,7 +188,7 @@ class LL1Analyzer (object):
             elif t.isEpsilon:
                 self._LOOK(t.target, stopState, ctx, look, lookBusy, calledRuleStack, seeThruPreds, addEOF)
             elif type(t) == WildcardTransition:
-                look.addRange( range(Token.MIN_USER_TOKEN_TYPE, self.atn.maxTokenType + 1) )
+                look.addRange( Interval(Token.MIN_USER_TOKEN_TYPE, self.atn.maxTokenType + 1) )
             else:
                 set_ = t.label
                 if set_ is not None:

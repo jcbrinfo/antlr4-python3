@@ -41,7 +41,7 @@
 #  the states. We'll use the term Edge for the DFA to distinguish them from
 #  ATN transitions.</p>
 #
-from antlr4.IntervalSet import IntervalSet
+from antlr4.IntervalSet import IntervalSet, Interval
 from antlr4.Token import Token
 
 # need forward declarations
@@ -148,7 +148,7 @@ class RangeTransition(Transition):
 
     def makeLabel(self):
         s = IntervalSet()
-        s.addRange(range(self.start, self.stop + 1))
+        s.addRange(Interval(self.start, self.stop + 1))
         return s
 
     def matches( self, symbol:int, minVocabSymbol:int,  maxVocabSymbol:int):
@@ -208,7 +208,7 @@ class SetTransition(Transition):
             self.label = set
         else:
             self.label = IntervalSet()
-            self.label.addRange(range(Token.INVALID_TYPE, Token.INVALID_TYPE + 1))
+            self.label.addRange(Interval(Token.INVALID_TYPE, Token.INVALID_TYPE + 1))
 
     def matches( self, symbol:int, minVocabSymbol:int,  maxVocabSymbol:int):
         return symbol in self.label

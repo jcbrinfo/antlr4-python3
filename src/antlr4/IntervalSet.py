@@ -2,6 +2,26 @@ from io import StringIO
 import unittest
 from antlr4.Token import Token
 
+try:
+    range.start
+
+    Interval = range
+except AttributeError:
+    class Interval(object):
+        def __init__(self, start, stop):
+            self.start = start
+            self.stop = stop
+            self.range = range(start, stop)
+    
+        def __contains__(self, item):
+            return item in self.range
+        
+        def __len__(self):
+            return self.stop - self.start
+    
+        def __iter__(self):
+            return iter(self.range)
+
 # need forward declarations
 IntervalSet = None
 
@@ -27,9 +47,9 @@ class IntervalSet(object):
         return Token.INVALID_TYPE
 
     def addOne(self, v:int):
-        self.addRange(range(v, v+1))
+        self.addRange(Interval(v, v+1))
 
-    def addRange(self, v:range):
+    def addRange(self, v:Interval):
         if self.intervals is None:
             self.intervals = list()
             self.intervals.append(v)
@@ -43,11 +63,11 @@ class IntervalSet(object):
                     return
                 # contiguous range -> adjust
                 elif v.stop==i.start:
-                    self.intervals[k] = range(v.start, i.stop)
+                    self.intervals[k] = Interval(v.start, i.stop)
                     return
                 # overlapping range -> adjust and reduce
                 elif v.start<=i.stop:
-                    self.intervals[k] = range(min(i.start,v.start), max(i.stop,v.stop))
+                    self.intervals[k] = Interval(min(i.start,v.start), max(i.stop,v.stop))
                     self.reduce(k)
                     return
                 k += 1
@@ -70,12 +90,12 @@ class IntervalSet(object):
                 self.intervals.pop(k+1)
                 self.reduce(k)
             elif l.stop >= r.start:
-                self.intervals[k] = range(l.start, r.stop)
+                self.intervals[k] = Interval(l.start, r.stop)
                 self.intervals.pop(k+1)
 
     def complement(self, start, stop):
         result = IntervalSet()
-        result.addRange(range(start,stop+1))
+        result.addRange(Interval(start,stop+1))
         for i in self.intervals:
             result.removeRange(i)
         return result
@@ -106,8 +126,8 @@ class IntervalSet(object):
                     return
                 # check for including range, split it
                 elif v.start>i.start and v.stop<i.stop:
-                    self.intervals[k] = range(i.start, v.start)
-                    x = range(v.stop, i.stop)
+                    self.intervals[k] = Interval(i.start, v.start)
+                    x = Interval(v.stop, i.stop)
                     self.intervals.insert(k, x)
                     return
                 # check for included range, remove it
@@ -116,10 +136,10 @@ class IntervalSet(object):
                     k = k - 1 # need another pass
                 # check for lower boundary
                 elif v.start<i.stop:
-                    self.intervals[k] = range(i.start, v.start)
+                    self.intervals[k] = Interval(i.start, v.start)
                 # check for upper boundary
                 elif v.stop<i.stop:
-                    self.intervals[k] = range(v.stop, i.stop)
+                    self.intervals[k] = Interval(v.stop, i.stop)
                 k += 1
 
     def removeOne(self, v):
@@ -135,15 +155,15 @@ class IntervalSet(object):
                     return
                 # check for lower boundary
                 elif v==i.start:
-                    self.intervals[k] = range(i.start+1, i.stop)
+                    self.intervals[k] = Interval(i.start+1, i.stop)
                     return
                 # check for upper boundary
                 elif v==i.stop-1:
-                    self.intervals[k] = range(i.start, i.stop-1)
+                    self.intervals[k] = Interval(i.start, i.stop-1)
                     return
                 # split existing range
                 elif v<i.stop-1:
-                    x = range(i.start, v)
+                    x = Interval(i.start, v)
                     i.start = v + 1
                     self.intervals.insert(k, x)
                     return
@@ -204,15 +224,15 @@ class TestIntervalSet(unittest.TestCase):
 
     def testRange(self):
         s = IntervalSet()
-        s.addRange(range(30,41))
+        s.addRange(Interval(30,41))
         self.assertTrue(30 in s)
         self.assertTrue(40 in s)
         self.assertTrue(35 in s)
 
     def testDistinct1(self):
         s = IntervalSet()
-        s.addRange(range(30,32))
-        s.addRange(range(40,42))
+        s.addRange(Interval(30,32))
+        s.addRange(Interval(40,42))
         self.assertEquals(2,len(s.intervals))
         self.assertTrue(30 in s)
         self.assertTrue(40 in s)
@@ -220,8 +240,8 @@ class TestIntervalSet(unittest.TestCase):
 
     def testDistinct2(self):
         s = IntervalSet()
-        s.addRange(range(40,42))
-        s.addRange(range(30,32))
+        s.addRange(Interval(40,42))
+        s.addRange(Interval(30,32))
         self.assertEquals(2,len(s.intervals))
         self.assertTrue(30 in s)
         self.assertTrue(40 in s)
@@ -229,8 +249,8 @@ class TestIntervalSet(unittest.TestCase):
 
     def testContiguous1(self):
         s = IntervalSet()
-        s.addRange(range(30,36))
-        s.addRange(range(36,41))
+        s.addRange(Interval(30,36))
+        s.addRange(Interval(36,41))
         self.assertEquals(1,len(s.intervals))
         self.assertTrue(30 in s)
         self.assertTrue(40 in s)
@@ -238,41 +258,41 @@ class TestIntervalSet(unittest.TestCase):
 
     def testContiguous2(self):
         s = IntervalSet()
-        s.addRange(range(36,41))
-        s.addRange(range(30,36))
+        s.addRange(Interval(36,41))
+        s.addRange(Interval(30,36))
         self.assertEquals(1,len(s.intervals))
         self.assertTrue(30 in s)
         self.assertTrue(40 in s)
 
     def testOverlapping1(self):
         s = IntervalSet()
-        s.addRange(range(30,40))
-        s.addRange(range(35,45))
+        s.addRange(Interval(30,40))
+        s.addRange(Interval(35,45))
         self.assertEquals(1,len(s.intervals))
         self.assertTrue(30 in s)
         self.assertTrue(44 in s)
 
     def testOverlapping2(self):
         s = IntervalSet()
-        s.addRange(range(35,45))
-        s.addRange(range(30,40))
+        s.addRange(Interval(35,45))
+        s.addRange(Interval(30,40))
         self.assertEquals(1,len(s.intervals))
         self.assertTrue(30 in s)
         self.assertTrue(44 in s)
 
     def testOverlapping3(self):
         s = IntervalSet()
-        s.addRange(range(30,32))
-        s.addRange(range(40,42))
-        s.addRange(range(50,52))
-        s.addRange(range(20,61))
+        s.addRange(Interval(30,32))
+        s.addRange(Interval(40,42))
+        s.addRange(Interval(50,52))
+        s.addRange(Interval(20,61))
         self.assertEquals(1,len(s.intervals))
         self.assertTrue(20 in s)
         self.assertTrue(60 in s)
 
     def testComplement(self):
         s = IntervalSet()
-        s.addRange(range(10,21))
+        s.addRange(Interval(10,21))
         c = s.complement(1,100)
         self.assertTrue(1 in c)
         self.assertTrue(100 in c)
